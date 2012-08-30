@@ -55,6 +55,9 @@ class OpenSubtitles(object):
     def check_hashes(self, hashes):
         answer = self.__request('CheckMovieHash2', hashes)
 
+        if not answer['data']:
+            return {}
+
         return answer['data']
 
 
