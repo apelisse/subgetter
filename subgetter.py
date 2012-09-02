@@ -3,6 +3,7 @@
 import logging
 import md5
 import os
+import re
 import struct
 import sys
 
@@ -107,6 +108,21 @@ http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
         self.subfile = subfile
         with open(subfile, 'w') as subf:
             subf.write(sub)
+
+    def find_season_episode(self):
+        assert 'serie' in self.kind
+        assert not self.season
+        assert not self.episode
+
+        base = os.path.basename(self.path)
+
+        match = re.search(
+            "[sS]?(?P<season>\d{1,2})[-xXeE](?P<episode>\d{1,2})",
+            base)
+        if match:
+            self.season = int(match.groupdict()['season'])
+            self.episode = int(match.groupdict()['episode'])
+
 
 def main():
     osdb = opensubtitles.OpenSubtitles()
