@@ -64,6 +64,11 @@ class OpenSubtitles(object):
         return answer['data']
 
 
+    def search_on_imdb(self, name):
+        answer = self.__request('SearchMoviesOnIMDB', name)
+
+        return answer['data']
+
     def download_subtitles(self, movies, language='eng'):
         """
         Movies is a dictionary. It should contain:
