@@ -35,10 +35,10 @@ Movie %s (%s size %s):
 Found name: %s
 IMDb Id: %d
 Video type: %s
-E%dS%d
+Season %02d Episode %02d
 """ % (self.path, self.hash, self.size,
        self.name, self.imdbid, self.kind,
-       self.episode, self.season)
+       self.season, self.episode)
 
     @staticmethod
     def __hash(path):
