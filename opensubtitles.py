@@ -31,6 +31,9 @@ class OpenSubtitles(object):
 
         self.logger.debug('Answer: %s', answer)
 
+        if not answer:
+            raise Exception('Empty answer from OpenSubtitles')
+
         if answer['status'] == '401 Unauthorized' and name != 'LogIn':
             self.__login()
         elif not answer['status'].startswith('2'):
