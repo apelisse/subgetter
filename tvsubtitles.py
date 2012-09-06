@@ -86,7 +86,18 @@ def _download_file(fileid):
     result = urllib.urlopen(download_path).read()
 
     fzip = zipfile.ZipFile(StringIO.StringIO(result))
-    fsub = fzip.read(fzip.infolist()[0])
+
+    subname = None
+    for f in fzip.infolist():
+        fname = f.filename
+        if (fname.endswith('srt') or
+            fname.endswith('sub')):
+            subname = fname
+
+    if not subname:
+        raise Exception('No subtitle in zip file')
+
+    fsub = fzip.read(subname)
 
     return fsub
 
