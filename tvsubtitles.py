@@ -1,5 +1,7 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import argparse
 import re
 import StringIO
 import urllib
@@ -95,3 +97,25 @@ def download_subtitle(serie, season, episode, language):
     subid = search_subtitles(episodeid, language)
 
     return download_subid(subid[0])
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Download subtitle for TV Episode")
+    parser.add_argument('serie')
+    parser.add_argument('season')
+    parser.add_argument('episode')
+    parser.add_argument('-l', '--language', default='en')
+    parser.add_argument('-o', '--outfile', default='dump.srt')
+
+    args = parser.parse_args()
+
+    sub = download_subtitle(args.serie,
+                            args.season,
+                            args.episode,
+                            args.language)
+
+    with open(args.outfile, 'w') as f:
+        f.write(sub)
+
+if __name__ == '__main__':
+    main()
