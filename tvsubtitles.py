@@ -6,93 +6,92 @@ import urllib
 import urlparse
 import zipfile
 
-class TVSubtitles(object):
-    def __init__(self):
-        self.base_url = 'http://www.tvsubtitles.net'
 
-    def search(self, serie):
-        """
-        Return the list of series found, with matching id
-        """
-        search_path = urlparse.urljoin(self.base_url, 'search.php')
-        data = urllib.urlencode({'q': serie})
-
-        result = urllib.urlopen(search_path, data).read()
-
-        pattern = re.compile("""
-        href=\"/tvshow-(?P<serieid>\d+)\.html\">
-        (?P<name>[^<]+)[ ]
-         \(\d{4}-\d{4}\)
-        """, re.MULTILINE | re.VERBOSE)
-
-        return pattern.findall(result)
+BASE_URL = 'http://www.tvsubtitles.net'
 
 
-    def search_episode(self, serieid, season, episode):
-        serieid = int(serieid)
-        season = int(season)
-        episode = int(episode)
+def search_serie(serie):
+    """
+    Return the list of series found, with matching id
+    """
+    search_path = urlparse.urljoin(BASE_URL, 'search.php')
+    data = urllib.urlencode({'q': serie})
 
-        search_path = urlparse.urljoin(
-            self.base_url,
-            'tvshow-%d-%d.html' % (serieid, season))
+    result = urllib.urlopen(search_path, data).read()
 
-        result = urllib.urlopen(search_path).read()
+    pattern = re.compile("""
+    href=\"/tvshow-(?P<serieid>\d+)\.html\">
+    (?P<name>[^<]+)[ ]
+    \(\d{4}-\d{4}\)
+    """, re.MULTILINE | re.VERBOSE)
 
-        match = re.search("""
-        %dx%02d.*?href=\"episode-(?P<episodeid>\d+)\.html\">
-        """ % (season, episode), result, re.MULTILINE | re.VERBOSE | re.DOTALL)
+    return pattern.findall(result)
 
-        return match.group('episodeid')
 
-    def search_subtitles(self, episodeid, language):
-        """
-        Return a list of ids
-        """
-        episodeid = int(episodeid)
+def search_episode(serieid, season, episode):
+    serieid = int(serieid)
+    season = int(season)
+    episode = int(episode)
 
-        search_path = urlparse.urljoin(
-            self.base_url,
-            "episode-%d.html" % episodeid)
+    search_path = urlparse.urljoin(BASE_URL, 'tvshow-%d-%d.html' % (
+        serieid, season))
 
-        result = urllib.urlopen(search_path).read()
+    result = urllib.urlopen(search_path).read()
 
-        matches = re.findall("""
-        subtitle-(?P<subid>\d+).html
-        .*?
-        flags/(?P<language>\w+).gif
-        """, result, re.VERBOSE | re.MULTILINE | re.DOTALL)
+    match = re.search("""
+    %dx%02d.*?href=\"episode-(?P<episodeid>\d+)\.html\">
+    """ % (season, episode), result, re.MULTILINE | re.VERBOSE | re.DOTALL)
 
-        return [subid for subid, lang in matches if lang == language]
+    return match.group('episodeid')
 
-    def download_subid(self, subid):
-        subid = int(subid)
-        # search_path = urlparse.urljoin(
-        #     self.base_url,
-        #     "subtitle-%d.html" % subid)
 
-        # result = urllib.urlopen(search_path).read()
+def search_subtitles(episodeid, language):
+    """
+    Return a list of ids
+    """
+    episodeid = int(episodeid)
 
-        # match = re.search("href=\"download-(\d+).html\"", result)
+    search_path = urlparse.urljoin(BASE_URL, "episode-%d.html" % episodeid)
 
-        # return self.__download_file(match.group(1))
-        return self.__download_file(subid)
+    result = urllib.urlopen(search_path).read()
 
-    def __download_file(self, fileid):
-        download_path = urlparse.urljoin(
-            self.base_url,
-            "download-%d.html" % fileid)
+    matches = re.findall("""
+    subtitle-(?P<subid>\d+).html
+    .*?
+    flags/(?P<language>\w+).gif
+    """, result, re.VERBOSE | re.MULTILINE | re.DOTALL)
 
-        result = urllib.urlopen(download_path).read()
+    return [subid for subid, lang in matches if lang == language]
 
-        fzip = zipfile.ZipFile(StringIO.StringIO(result))
-        fsub = fzip.read(fzip.infolist()[0])
 
-        return fsub
+def download_subid(subid):
+    subid = int(subid)
+    # search_path = urlparse.urljoin(
+    #     self.base_url,
+    #     "subtitle-%d.html" % subid)
 
-    def download_subtitle(self, serie, season, episode, language):
-        serieid = self.search(serie)
-        episodeid = self.search_episode(serieid[0][0], season, episode)
-        subid = self.search_subtitles(episodeid, language)
+    # result = urllib.urlopen(search_path).read()
 
-        return self.download_subid(subid[0])
+    # match = re.search("href=\"download-(\d+).html\"", result)
+
+    # return _download_file(match.group(1))
+    return _download_file(subid)
+
+
+def _download_file(fileid):
+    download_path = urlparse.urljoin(BASE_URL, "download-%d.html" % fileid)
+
+    result = urllib.urlopen(download_path).read()
+
+    fzip = zipfile.ZipFile(StringIO.StringIO(result))
+    fsub = fzip.read(fzip.infolist()[0])
+
+    return fsub
+
+
+def download_subtitle(serie, season, episode, language):
+    serieid = search_serie(serie)
+    episodeid = search_episode(serieid[0][0], season, episode)
+    subid = search_subtitles(episodeid, language)
+
+    return download_subid(subid[0])
