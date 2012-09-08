@@ -1,2 +1,5 @@
 # Ignore object files
 *.pyc
+
+# Ignore epydoc files
+html
