@@ -70,16 +70,21 @@ def search_subtitles(episodeid, language):
 
 def download_subid(subid):
     subid = int(subid)
-    # search_path = urlparse.urljoin(
-    #     self.base_url,
-    #     "subtitle-%d.html" % subid)
 
-    # result = urllib.urlopen(search_path).read()
-
-    # match = re.search("href=\"download-(\d+).html\"", result)
-
-    # return _download_file(match.group(1))
     return _download_file(subid)
+
+
+def _download_subid(subid):
+    subid = int(subid)
+    search_path = urlparse.urljoin(
+        self.base_url,
+        "subtitle-%d.html" % subid)
+
+    result = urllib.urlopen(search_path).read()
+
+    match = re.search("href=\"download-(\d+).html\"", result)
+
+    return _download_file(match.group(1))
 
 
 def _download_file(fileid):
