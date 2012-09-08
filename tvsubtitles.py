@@ -12,17 +12,19 @@ import zipfile
 BASE_URL = 'http://www.tvsubtitles.net'
 
 
-def search_serie(serie):
+def search_tvshow(tvshow):
     """
     Return the list of series found, with matching id
     """
+    tvshow = str(tvshow)
+
     search_path = urlparse.urljoin(BASE_URL, 'search.php')
-    data = urllib.urlencode({'q': serie})
+    data = urllib.urlencode({'q': tvshow})
 
     result = urllib.urlopen(search_path, data).read()
 
     pattern = re.compile("""
-    href=\"/tvshow-(?P<serieid>\d+)\.html\">
+    href=\"/tvshow-(?P<tvshowid>\d+)\.html\">
     (?P<name>[^<]+)[ ]
     \(\d{4}-\d{4}\)
     """, re.MULTILINE | re.VERBOSE)
@@ -30,13 +32,13 @@ def search_serie(serie):
     return pattern.findall(result)
 
 
-def search_episode(serieid, season, episode):
-    serieid = int(serieid)
+def search_episode(tvshowid, season, episode):
+    tvshowid = int(tvshowid)
     season = int(season)
     episode = int(episode)
 
     search_path = urlparse.urljoin(BASE_URL, 'tvshow-%d-%d.html' % (
-        serieid, season))
+        tvshowid, season))
 
     result = urllib.urlopen(search_path).read()
 
@@ -102,17 +104,18 @@ def _download_file(fileid):
     return fsub
 
 
-def download_subtitle(serie, season, episode, language):
-    serieid = search_serie(serie)
-    episodeid = search_episode(serieid[0][0], season, episode)
+def download_subtitle(tvshow, season, episode, language):
+    tvshowid = search_tvshow(tvshow)
+    episodeid = search_episode(tvshowid[0][0], season, episode)
     subid = search_subtitles(episodeid, language)
 
     return download_subid(subid[0])
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Download subtitle for TV Episode")
-    parser.add_argument('serie')
+    parser.add_argument('tvshow')
     parser.add_argument('season')
     parser.add_argument('episode')
     parser.add_argument('-l', '--language', default='en')
@@ -120,13 +123,14 @@ def main():
 
     args = parser.parse_args()
 
-    sub = download_subtitle(args.serie,
+    sub = download_subtitle(args.tvshow,
                             args.season,
                             args.episode,
                             args.language)
 
     with open(args.outfile, 'w') as f:
         f.write(sub)
+
 
 if __name__ == '__main__':
     main()
