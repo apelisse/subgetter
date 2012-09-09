@@ -5,6 +5,7 @@ import logging
 import xmlrpclib
 import zlib
 
+
 class OpenSubtitles(object):
     def __init__(self):
         self.conn = xmlrpclib.ServerProxy(
@@ -15,7 +16,6 @@ class OpenSubtitles(object):
         self.osdb_time = decimal.Decimal()
         self.transfer_time = datetime.timedelta()
         self.__login()
-
 
     def __request(self, name, *args, **kw):
         func = getattr(self.conn, name)
@@ -43,17 +43,14 @@ class OpenSubtitles(object):
 
         return answer
 
-
     def __login(self):
         self.logger.info('Logging in...')
         answer = self.__request('LogIn', '', '', 'en', 'OS Test User Agent')
         self.token = answer['token']
 
-
     def __logout(self):
         self.logger.info('Logging out.')
         self.__request('LogOut')
-
 
     def check_hashes(self, hashes):
         answer = self.__request('CheckMovieHash2', hashes)
@@ -62,7 +59,6 @@ class OpenSubtitles(object):
             return {}
 
         return answer['data']
-
 
     def search_on_imdb(self, name):
         answer = self.__request('SearchMoviesOnIMDB', name)
@@ -96,7 +92,6 @@ class OpenSubtitles(object):
         return {
             subs[data['idsubtitlefile']]: self.__convert_subtitle(data['data'])
             for data in answer['data']}
-
 
     def subtitle_language(self, subs):
         """

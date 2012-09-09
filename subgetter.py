@@ -9,6 +9,7 @@ import sys
 
 import opensubtitles
 
+
 class Movie(object):
     def __init__(self, path):
         # File info
@@ -28,7 +29,6 @@ class Movie(object):
 
         # Any subfiles ?
         self.subfile = None
-
 
     def __str__(self):
         return """
@@ -59,21 +59,21 @@ http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
         if filesize < 65536 * 2:
             return "SizeError"
 
-        for x in range(65536//bytesize):
+        for x in range(65536 // bytesize):
             buffer = f.read(bytesize)
-            (l_value,)= struct.unpack(longlongformat, buffer)
+            (l_value,) = struct.unpack(longlongformat, buffer)
             hash += l_value
-            hash = hash & 0xFFFFFFFFFFFFFFFF #to remain as 64bit number
+            hash = hash & 0xFFFFFFFFFFFFFFFF  # to remain as 64bit number
 
-        f.seek(max(0,filesize-65536),0)
-        for x in range(65536//bytesize):
+        f.seek(max(0, filesize - 65536), 0)
+        for x in range(65536 // bytesize):
             buffer = f.read(bytesize)
-            (l_value,)= struct.unpack(longlongformat, buffer)
+            (l_value,) = struct.unpack(longlongformat, buffer)
             hash += l_value
             hash = hash & 0xFFFFFFFFFFFFFFFF
 
         f.close()
-        returnedhash =  "%016x" % hash
+        returnedhash = "%016x" % hash
         return returnedhash
 
     def filename(self):
@@ -103,7 +103,7 @@ http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
 
     def add_subtitle(self, sub, language='eng'):
         base = self.path[-len(self.extension):]
-        subfile = base + '.srt' # We assume the file is srt ...
+        subfile = base + '.srt'  # We assume the file is srt ...
 
         self.subfile = subfile
         with open(subfile, 'w') as subf:

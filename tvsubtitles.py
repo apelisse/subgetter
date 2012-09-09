@@ -29,6 +29,7 @@ BASE_URL = 'http://www.tvsubtitles.net'
 MINIMUM_COEF = 0.6
 "Minimum coefficient used to make sure found tv show matches"
 
+
 def search_tvshow(tvshow):
     """
     Search for a sire according to tvshow name.
