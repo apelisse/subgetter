@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 """
-tvsubtitles
-
 This module can be used as an interface to TVSubtitles.net.
 
 Currently it uses some regex rather than html/xml parsing to find
