@@ -17,6 +17,8 @@ import urllib
 import urlparse
 import zipfile
 
+import misc
+
 __author__ = "Antoine Pelisse"
 __copyright__ = "Copyright 2012, Antoine Pelisse"
 __license__ = "BSD"
@@ -24,7 +26,8 @@ __version__ = "0.9"
 __contact__ = "apelisse@gmail.com"
 
 BASE_URL = 'http://www.tvsubtitles.net'
-
+MINIMUM_COEF = 0.6
+"Minimum coefficient used to make sure found tv show matches"
 
 def search_tvshow(tvshow):
     """
@@ -183,8 +186,21 @@ def download_subtitle(tvshow, season, episode, language):
     @param episode: Episode number
     @param language: Language of the subtitle required
     """
-    tvshowid = search_tvshow(tvshow)
-    episodeid = search_episode(tvshowid[0][0], season, episode)
+    tvshowids = search_tvshow(tvshow)
+
+    # Let's find the tv show that matches the best
+    tvid = None
+    best_match = 0
+    for showid, showname in tvshowids:
+        match = misc.dice_coefficient(showname, tvshow, ignore_case=True)
+        if match > best_match and match > MINIMUM_COEF:
+            best_match = match
+            tvid = showid
+
+    if not tvid:
+        return None
+
+    episodeid = search_episode(tvid, season, episode)
     subid = search_subtitles(episodeid, language)
 
     return download_subid(subid[0])
