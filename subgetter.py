@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import md5
 import os
 import re
 import struct
