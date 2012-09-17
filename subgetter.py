@@ -134,6 +134,94 @@ http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
         else:
             return None
 
+class Asker(object):
+    """
+    This class gives opportunity to user to select the correct movie.
+
+    Well, this is an abstract class because it doesn't implement a function
+    to allow the user to do it. There should be a TextAsker for exemple
+    to allow the user to type in the name, etc, or maybe if we have a graphic
+    interface, we can implement some other kind of functions.
+
+    Function to be implemented: select
+    """
+    def __init__(self, ask_threshold):
+        """
+        Create asker
+
+        @param ask_threshold: Below this score, we ask for suggestions
+        """
+        self.ask_threshold = ask_threshold
+
+    def pick(self, choices):
+        """
+        Pick a movie amongst choices
+
+        Here goes the algorithm:
+           - If one is higher than ask_threshold, pick the highest and notify
+           - Else, call select() for all choices
+
+        @param choices: List of tuples: [(Movie, Score), ...]
+        @return: Selected movie
+        """
+        if not len(choices):
+            return None
+
+        max_score_movie = (0, None)
+        for movie, score in choices:
+            if score > max_score_movie[1]:
+                max_score_movie = (movie, score)
+
+        if max_score_movie[1] > self.ask_threshold:
+            return max_score_movie[0]
+        else:
+            return self.select(choices)
+
+    def select(self, choices):
+        """
+        Allow user to select a movie
+
+        This is an abstract base class, and this function should probably
+        be implemented by inheriting classes.
+
+        @param choices: List of (movies, score)
+        @return: Selected movie
+        """
+        raise NotImplementedError
+
+
+class TextAsker(Asker):
+    """
+    This gives the user the opportunity to fill in the movie name and other
+    information manually from a terminal.
+    Either select from a list of movies or type in the information.
+    """
+    def select(self, choices):
+        """
+        Output choices, and read the input
+        """
+        # XXX: Allow user to input as text
+        return choices[0]
+
+
+class AutomaticAsker(Asker):
+    """
+    Picks the best matching movie, and that's it.
+
+    It does not interact with anything or anybody.
+    It just returns the best match.
+    """
+    def __init__(self):
+        super(AutomaticAsker, self).__init__(0)
+
+
+    def select(self, choices):
+        # We should never reach this place, the pick function
+        # should have resolved this issue alone, because the
+        # ask_threshold is 0.
+        assert False
+
+
 
 def main():
     osdb = opensubtitles.OpenSubtitles()
