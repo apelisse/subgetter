@@ -10,35 +10,54 @@ import opensubtitles
 
 
 class Movie(object):
+    def __init__(self, name, kind="movie", imdbid=0, season=0, episode=0):
+        self.name = str(name)
+        try:
+            self.imdbid = int(imdbid)
+        except ValueError:
+            self.imdbid = 0
+        self.kind = str(kind)
+        try:
+            self.season = int(season)
+        except ValueError:
+            self.season = 0
+        try:
+            self.episode = int(episode)
+        except ValueError:
+            self.episode = 0
+
+    def __str__(self):
+        if self.kind == "episode":
+            tvshow = "\nSeason {0.season} Episode {0.episode}".format(self)
+        else:
+            tvshow = ""
+
+        return "Name: {0.name}\nKind: {0.kind}\nIMDb Id: {0.imdbid}{1}".format(
+            self, tvshow)
+
+    def update_info(self, movie):
+        self.name = movie.name
+        self.imdbid = movie.imdbid
+        self.kind = movie.kind
+        self.season = movie.season
+        self.episode = movie.episode
+
+class MovieFile(Movie):
     def __init__(self, path):
+        super(MovieFile, self).__init__("", "")
+
         # File info
         self.path = str(path)
         self.hash = self.__hash(path)
         self.size = os.path.getsize(path)
         self.extension = path.split('.')[-1]
 
-        # Movie info
-        self.name = None
-        self.imdbid = int()
-        self.kind = None
-
-        # These are specific to tv shows
-        self.episode = int()
-        self.season = int()
-
         # Any subfiles ?
         self.subfile = None
 
     def __str__(self):
-        return """
-Movie %s (%s size %s):
-Found name: %s
-IMDb Id: %d
-Video type: %s
-Season %02d Episode %02d
-""" % (self.path, self.hash, self.size,
-       self.name, self.imdbid, self.kind,
-       self.season, self.episode)
+        return "Movie {0.path} ({0.hash} size {0.size}):\n{1}".format(
+            self, super(MovieFile, self).__str__())
 
     @staticmethod
     def __hash(path):
@@ -77,21 +96,6 @@ http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
 
     def filename(self):
         return os.path.basename(self.path)
-
-    def update(self, info):
-        """
-        Do not accept a list for the moment
-        """
-        if 'MovieName' in info:
-            self.name = info['MovieName']
-        if 'SeriesSeason' in info:
-            self.season = int(info['SeriesSeason'])
-        if 'SeriesEpisode' in info:
-            self.episode = int(info['SeriesEpisode'])
-        if 'MovieKind' in info:
-            self.kind = info['MovieKind']
-        if 'MovieImdbID' in info:
-            self.imdbid = int(info['MovieImdbID'])
 
     def osdb_criteria(self):
         return {
