@@ -7,6 +7,7 @@ import struct
 import sys
 
 import opensubtitles
+import misc
 
 
 class Movie(object):
@@ -220,6 +221,87 @@ class AutomaticAsker(Asker):
         # should have resolved this issue alone, because the
         # ask_threshold is 0.
         assert False
+
+class MovieScore(object):
+    def __score_kind(self, given, guessed):
+        """
+        Calculate score based on movie kind, season and episode
+
+        This modify the movie given if we fill we can do better
+
+        @param given: Movie info given
+        @param guessed: Movie info we tried to guess
+        @return: score calculated. Range is 0 to 1
+        @rtype: float
+        """
+        score = 0
+
+        # Handle score for kind, season and episode
+        if given.kind == 'serie' and guessed.kind == 'episode':
+            given.kind = 'episode'
+            given.season = movie_guesssed.season
+            given.episode = movie_guesssed.episode
+            score += 0.40
+        elif (given.kind == 'episode' and
+              movie_guesssed.kind == 'episode'):
+            score += 0.25
+            if given.season == movie_guesssed.season:
+                score += 0.12
+            if given.episode == guessed.episode:
+                score += 0.13
+            # We need to get show name from episode name, if possible
+            m = re.search("\"(.*)\"", given.name)
+            if m:
+                given.name = m.group(1)
+        elif given.kind == 'movie' and guessed.kind == 'movie':
+            score += 0.25
+
+        assert 0 <= score <= 1
+
+        return score
+
+    def __score_name(self, given, guessed):
+        """
+        Calculate score based on name
+
+        @param given: Given movie name
+        @param guessed: Guessed movie name
+        @return: score calculated. Range from 0 to 1.
+        @rtype: float
+        """
+        name_score = misc.strings_contained(guessed, given)
+        name_score += misc.dice_coefficient(guessed, given)
+
+        return name_score / 2
+
+    def score(self, movie_given, movie_guessed):
+        """
+        Give a score for matching two movies
+
+        Point distribution depends if it's a movie or a tv show.
+          1. For a movie, the name is very important (70%), kind is 25%
+          2. For a tv show, kind is 25%, season and episode 25%, and name 50%
+
+        @warning: This method can modify the movie_given
+
+        @param movie_guessed: This is what we guessed from the filename
+        @param movie_given: This is the movie given by osdb
+        @return: (movie_given, score), score is what we calculated
+        score range is from 0 to 1
+        @rtype: float
+        """
+        score = self.__score_kind(movie_given, movie_guessed)
+        name_score = self.__score_name(movie_given.name, movie_guessed.name)
+
+        if movie_given.kind == 'movie':
+            score += name_score * 3 / 8
+        else:
+            score += name_score / 4
+
+        assert 0 <= score <= 1
+
+        return (movie_given, score)
+
 
 def identify_movie(moviefile, osdb, asker):
     """
