@@ -104,27 +104,35 @@ http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
             'name': self.filename(),
             }
 
-    def add_subtitle(self, sub, language='eng'):
-        base = self.path[-len(self.extension):]
-        subfile = base + '.srt'  # We assume the file is srt ...
+    def guess(self):
+        """
+        Let's try to guess what movie it can be.
 
-        self.subfile = subfile
-        with open(subfile, 'w') as subf:
-            subf.write(sub)
+        @return: Movie with the info we guessed
+        """
+        # XXX: Potentially, we could remove some garbage here
+        name = self.filename()
 
-    def find_season_episode(self):
-        assert 'serie' in self.kind
-        assert not self.season
-        assert not self.episode
+        epsea = self.__guess_episode_season()
+        if not epsea:
+            return Movie(name=name)
+        else:
+            return Movie(name=name,
+                         kind="episode",
+                         season=epsea[0],
+                         episode=epsea[1])
 
+    def __guess_episode_season(self):
         base = os.path.basename(self.path)
 
         match = re.search(
             "[sS]?(?P<season>\d{1,2})[-xXeE](?P<episode>\d{1,2})",
             base)
         if match:
-            self.season = int(match.groupdict()['season'])
-            self.episode = int(match.groupdict()['episode'])
+            return (int(match.groupdict()['season']),
+                    int(match.groupdict()['episode']))
+        else:
+            return None
 
 
 def main():
