@@ -221,6 +221,39 @@ class AutomaticAsker(Asker):
         # ask_threshold is 0.
         assert False
 
+def identify_movie(moviefile, osdb, asker):
+    """
+    Identify movie information for moviefile
+
+    Most of the logic to identify the movie is obviously here.
+    It would be here to add an exhaustive description of how we
+    try to identify the movie
+
+    @param moviefile: Movie we want to identify
+    @param osdb: OSDb Handler
+    @param asker: Asker instance to get input from user
+    """
+    if not asker:
+        asker = AutomaticAsker()
+
+    infos = osdb.check_hashes([moviefile.hash])
+    movies = [Movie(info['MovieName'],
+                    kind=info['MovieKind'],
+                    season=info['SeriesSeason'],
+                    episode=info['SeriesEpisode'])
+              for info in infos[moviefile.hash]]
+
+    movie_guess = moviefile.guess()
+
+    # Give a note to each movies, against what we have
+    scores = [MovieScore().score(movie, movie_guess) for movie in movies]
+
+    # Finally, let's decide amongst all movies
+    movie = asker.pick(scores)
+
+    if movie:
+        moviefile.update_info(movie)
+
 
 
 def main():
