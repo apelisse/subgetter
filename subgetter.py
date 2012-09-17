@@ -1,5 +1,7 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import argparse
 import logging
 import os
 import re
@@ -337,36 +339,22 @@ def identify_movie(moviefile, osdb, asker):
         moviefile.update_info(movie)
 
 
-
 def main():
+    parser = argparse.ArgumentParser(
+        description="Get information about a movie")
+
+    parser.add_argument("movie", help="Movie to investigate")
+    args = parser.parse_args()
+
     osdb = opensubtitles.OpenSubtitles()
+    moviefile  = MovieFile(args.movie)
+    asker = TextAsker(0.7)
 
-    language = 'fra'
+    identify_movie(moviefile, osdb, asker)
 
-    movies = {}
-    for f in sys.argv[1:]:
-        movie = Movie(f)
-        movies[movie.hash] = movie
-
-    new_info = osdb.check_hashes(movies.keys())
-
-    for hash, info in new_info.items():
-        try:
-            movies[hash].update(info[0])
-        except IndexError:
-            logging.debug('Hash not found for movie: %s', movies[hash])
-
-    subs = osdb.download_subtitles(
-        [movie.osdb_criteria() for movie in movies.values()], language)
-
-    for hash, sub in subs.items():
-        movies[hash].add_subtitle(sub, language)
-
-    logging.info('%d movies with subtitle downloaded',
-                 len([1 for movie in movies.values() if movie.subfile]))
-
-    logging.info('%d movies with no subtitle downloaded',
-                 len([1 for movie in movies.values() if not movie.subfile]))
+    # At this time, we know most stuff about the movie,
+    # We should be able to download it !
+    print moviefile
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
