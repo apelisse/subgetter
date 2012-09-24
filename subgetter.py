@@ -203,8 +203,57 @@ class TextAsker(Asker):
         """
         Output choices, and read the input
         """
-        # XXX: Allow user to input as text
-        return choices[0]
+        print self.__show_choices(choices)
+        result = None
+        while result is None:
+            result = raw_input("Choice [0]: ")
+            if result == "":
+                result = "0"
+            try:
+                result = int(result)
+            except TypeError:
+                print result, "is not a valid choice (not a number)"
+                result = None
+
+            if not 0 <= result <= len(choices):
+                print result, "is not a valid choice (invalid number)"
+                result = None
+
+        # At this point, either reuslt is a valid choice,
+        # or we have the max value which is: manual type-in
+        if result < len(choices):
+            return choices[result][0]
+        else:
+            return self.__get_from_user()
+
+    def __show_choices(self, choices):
+        text = "Select one amongst those choices:\n"
+        for num, choice in enumerate(choices):
+            text += "[%d] Score: (%2d%%)\n%s\n" % (
+                num, int(choice[1] * 100), choice[0])
+        text += "[%d] I will give my inputs" % (num + 1)
+
+        return text
+
+    def __get_from_user(self):
+        name = raw_input("Movie/Show name: ")
+        show_info = None
+        while show_info is None:
+            show_info = raw_input("SXXEXX or empty if movie: ")
+            if show_info == "":
+                season = 0
+                episode = 0
+                kind = "Movie"
+            match = re.match("S(\d{1,2})E(\d{1,2})", show_info)
+            if not match:
+                show_info = None
+                continue
+            else:
+                season = match.group(1)
+                episode = match.group(2)
+                kind = "episode"
+
+        return Movie(name=name, episode=episode, season=season, kind=kind)
 
 
 class AutomaticAsker(Asker):
@@ -239,24 +288,24 @@ class MovieScore(object):
         score = 0
 
         # Handle score for kind, season and episode
-        if given.kind == 'serie' and guessed.kind == 'episode':
+        if given.kind == 'tv series' and guessed.kind == 'episode':
             given.kind = 'episode'
-            given.season = movie_guesssed.season
-            given.episode = movie_guesssed.episode
-            score += 0.40
+            given.season = guessed.season
+            given.episode = guessed.episode
+            score = 0.75
         elif (given.kind == 'episode' and
-              movie_guesssed.kind == 'episode'):
-            score += 0.25
-            if given.season == movie_guesssed.season:
-                score += 0.12
+              guessed.kind == 'episode'):
+            score += 0.5
+            if given.season == guessed.season:
+                score += 0.25
             if given.episode == guessed.episode:
-                score += 0.13
+                score += 0.25
             # We need to get show name from episode name, if possible
             m = re.search("\"(.*)\"", given.name)
             if m:
                 given.name = m.group(1)
         elif given.kind == 'movie' and guessed.kind == 'movie':
-            score += 0.25
+            score = 1
 
         assert 0 <= score <= 1
 
@@ -271,18 +320,19 @@ class MovieScore(object):
         @return: score calculated. Range from 0 to 1.
         @rtype: float
         """
-        name_score = misc.strings_contained(guessed, given)
-        name_score += misc.dice_coefficient(guessed, given)
+        score = misc.strings_contained(guessed, given)
+        score += misc.dice_coefficient(guessed, given)
 
-        return name_score / 2
+        assert 0 <= score <= 2
+
+        return score / 2
 
     def score(self, movie_given, movie_guessed):
         """
         Give a score for matching two movies
 
-        Point distribution depends if it's a movie or a tv show.
-          1. For a movie, the name is very important (70%), kind is 25%
-          2. For a tv show, kind is 25%, season and episode 25%, and name 50%
+        Kind score is 40%
+        Name score is 60%
 
         @warning: This method can modify the movie_given
 
@@ -292,15 +342,10 @@ class MovieScore(object):
         score range is from 0 to 1
         @rtype: float
         """
-        score = self.__score_kind(movie_given, movie_guessed)
+        kind_score = self.__score_kind(movie_given, movie_guessed)
         name_score = self.__score_name(movie_given.name, movie_guessed.name)
 
-        if movie_given.kind == 'movie':
-            score += name_score * 3 / 8
-        else:
-            score += name_score / 4
-
-        assert 0 <= score <= 1
+        score = kind_score * 0.4 + name_score * 0.6
 
         return (movie_given, score)
 
