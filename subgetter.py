@@ -362,6 +362,9 @@ def identify_movie(moviefile, osdb, asker):
         asker = AutomaticAsker()
 
     infos = osdb.check_hashes([moviefile.hash])
+    if not infos:
+        return
+
     movies = [Movie(info['MovieName'],
                     kind=info['MovieKind'],
                     season=info['SeriesSeason'],
