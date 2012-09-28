@@ -260,7 +260,7 @@ class AutomaticAsker(Asker):
     It just returns the best match.
     """
     def __init__(self):
-        super(AutomaticAsker, self).__init__(0)
+        super(AutomaticAsker, self).__init__(-1)
 
 
     def select(self, choices):
