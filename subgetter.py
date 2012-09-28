@@ -367,6 +367,7 @@ def identify_movie(moviefile, osdb, asker):
 
     movies = [Movie(info['MovieName'],
                     kind=info['MovieKind'],
+                    imdbid=info['MovieImdbID'],
                     season=info['SeriesSeason'],
                     episode=info['SeriesEpisode'])
               for info in infos[moviefile.hash]]
