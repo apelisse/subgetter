@@ -263,15 +263,17 @@ class AutomaticAsker(Asker):
     It does not interact with anything or anybody.
     It just returns the best match.
     """
-    def __init__(self):
-        super(AutomaticAsker, self).__init__(-1)
-
+    def __init__(self, minimum=0):
+        super(AutomaticAsker, self).__init__(minimum)
 
     def select(self, choices):
-        # We should never reach this place, the pick function
-        # should have resolved this issue alone, because the
-        # ask_threshold is 0.
-        assert False
+        """
+        Choose no choice if we have to select
+
+        If we have to select a movie, it means we are below our minimum score,
+        it means that we should pick no choice at all
+        """
+        return None
 
 class MovieScore(object):
     def __score_kind(self, given, guessed):
