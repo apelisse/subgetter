@@ -3,6 +3,7 @@
 
 import argparse
 import logging
+import operator
 import os
 import re
 import struct
@@ -170,13 +171,8 @@ class Asker(object):
         if not len(choices):
             return None
 
-        max_score_movie = (0, None)
-        for movie, score in choices:
-            if score > max_score_movie[1]:
-                max_score_movie = (movie, score)
-
-        if max_score_movie[1] > self.ask_threshold:
-            return max_score_movie[0]
+        if choices[-1][1] > self.ask_threshold:
+            return choices[-1][0]
         else:
             return self.select(choices)
 
@@ -206,7 +202,7 @@ class TextAsker(Asker):
         print self.__show_choices(choices)
         result = None
         while result is None:
-            result = raw_input("Choice [0]: ")
+            result = raw_input("Choice [{0}]: ".format(len(choices) - 1))
             if result == "":
                 result = "0"
             try:
@@ -376,6 +372,9 @@ def identify_movie(moviefile, osdb, asker):
 
     # Give a note to each movies, against what we have
     scores = [MovieScore().score(movie, movie_guess) for movie in movies]
+
+    # sort scores
+    scores.sort(key=operator.itemgetter(1))
 
     # Finally, let's decide amongst all movies
     movie = asker.pick(scores)
