@@ -14,7 +14,11 @@ import misc
 
 
 class Movie(object):
-    def __init__(self, name, kind="movie", imdbid=0, season=0, episode=0):
+    MOVIE = "movie"
+    EPISODE = "episode"
+    TVSHOW = "tv series"
+
+    def __init__(self, name, kind=MOVIE, imdbid=0, season=0, episode=0):
         self.name = str(name)
         try:
             self.imdbid = int(imdbid)
@@ -31,7 +35,7 @@ class Movie(object):
             self.episode = 0
 
     def __str__(self):
-        if self.kind == "episode":
+        if self.kind == self.EPISODE:
             tvshow = "\nSeason {0.season} Episode {0.episode}".format(self)
         else:
             tvshow = ""
@@ -239,7 +243,7 @@ class TextAsker(Asker):
             if show_info == "":
                 season = 0
                 episode = 0
-                kind = "Movie"
+                kind = Movie.MOVIE
             match = re.match("S(\d{1,2})E(\d{1,2})", show_info)
             if not match:
                 show_info = None
@@ -247,7 +251,7 @@ class TextAsker(Asker):
             else:
                 season = match.group(1)
                 episode = match.group(2)
-                kind = "episode"
+                kind = Movie.EPISODE
 
         return Movie(name=name, episode=episode, season=season, kind=kind)
 
@@ -284,13 +288,13 @@ class MovieScore(object):
         score = 0
 
         # Handle score for kind, season and episode
-        if given.kind == 'tv series' and guessed.kind == 'episode':
-            given.kind = 'episode'
+        if given.kind == Movie.TVSHOW and guessed.kind == Movie.EPISODE:
+            given.kind = Movie.EPISODE
             given.season = guessed.season
             given.episode = guessed.episode
             score = 0.75
-        elif (given.kind == 'episode' and
-              guessed.kind == 'episode'):
+        elif (given.kind == Movie.EPISODE and
+              guessed.kind == Movie.EPISODE):
             score += 0.5
             if given.season == guessed.season:
                 score += 0.25
@@ -300,7 +304,7 @@ class MovieScore(object):
             m = re.search("\"(.*)\"", given.name)
             if m:
                 given.name = m.group(1)
-        elif given.kind == 'movie' and guessed.kind == 'movie':
+        elif given.kind == Movie.MOVIE and guessed.kind == Movie.MOVIE:
             score = 1
 
         assert 0 <= score <= 1
