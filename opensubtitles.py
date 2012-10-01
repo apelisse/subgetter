@@ -83,9 +83,19 @@ class OpenSubtitles(object):
         if answer['data'] == False:
             return {}
 
-        # Take the first one
-        subs = {data['IDSubtitleFile']: data['MovieHash']
-                for data in answer['data']}
+        # XXX: Yet, we take the first subtitle, no other criteria
+        moviesubs = {}
+        for data in answer['data']:
+            # We already have one, we're good
+            if data['MovieHash'] in moviesubs.keys():
+                continue
+
+            moviesubs[data['MovieHash']] = data['IDSubtitleFile']
+
+        subs = {}
+        # Invert the list
+        for moviehash, subtitleid in moviesubs.items():
+            subs[subtitleid] = moviehash
 
         answer = self.__request('DownloadSubtitles', subs.keys())
 
