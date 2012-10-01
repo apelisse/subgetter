@@ -11,7 +11,7 @@ import sys
 
 import opensubtitles
 import misc
-
+import tvsubtitles
 
 class Movie(object):
     MOVIE = "movie"
@@ -397,7 +397,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Get information about a movie")
 
-    parser.add_argument("movie", help="Movie to investigate")
+    parser.add_argument('movie', help='Movie to investigate')
+    parser.add_argument('-l', '--language', default='eng')
     args = parser.parse_args()
 
     osdb = opensubtitles.OpenSubtitles()
@@ -406,9 +407,36 @@ def main():
 
     identify_movie(moviefile, osdb, asker)
 
-    # At this time, we know most stuff about the movie,
-    # We should be able to download it !
+    if not moviefile.name:
+        print "Unable to identify the movie"
+        sys.exit(1)
+
+    print "We identified this movie:"
     print moviefile
+
+    language = args.language
+
+    subs = osdb.download_subtitles([moviefile.osdb_criteria()],
+                                  language=language)
+    sub = None
+    if moviefile.hash in subs:
+        sub = subs[moviefile.hash]
+    elif moviefile.kind == Movie.EPISODE:
+        sub = tvsubtitles.download_subtitle(moviefile.name,
+                                            moviefile.season,
+                                            moviefile.episode,
+                                            language)
+
+    if not sub:
+        print "No subtitle found for this movie"
+        sys.exit(2)
+
+    # XXX: Dummy technic: what if the file already exists ..
+    subname = '.'.join(moviefile.path.split('.')[:-1]) + '.srt'
+
+    with open(subname, 'w') as f:
+        f.write(sub)
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
