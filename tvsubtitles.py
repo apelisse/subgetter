@@ -204,6 +204,8 @@ def download_subtitle(tvshow, season, episode, language):
     episodeid = search_episode(tvid, season, episode)
     subid = search_subtitles(episodeid, language)
 
+    if not subid:
+        return None
     return download_subid(subid[0])
 
 
