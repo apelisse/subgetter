@@ -172,11 +172,13 @@ class Asker(object):
         @param choices: List of tuples: [(Movie, Score), ...]
         @return: Selected movie
         """
-        if not len(choices):
-            return None
+        try:
+            max_choice = choices[-1]
+        except IndexError:
+            max_choice = None
 
-        if choices[-1][1] > self.ask_threshold:
-            return choices[-1][0]
+        if max_choice and max_choice[1] > self.ask_threshold:
+            return max_choice[0]
         else:
             return self.select(choices)
 
@@ -206,7 +208,8 @@ class TextAsker(Asker):
         print self.__show_choices(choices)
         result = None
         while result is None:
-            result = raw_input("Choice [{0}]: ".format(len(choices) - 1))
+            last_choice = len(choices) or 1
+            result = raw_input("Choice [{0}]: ".format(last_choice - 1))
             if result == "":
                 result = "0"
             try:
@@ -219,7 +222,7 @@ class TextAsker(Asker):
                 print result, "is not a valid choice (invalid number)"
                 result = None
 
-        # At this point, either reuslt is a valid choice,
+        # At this point, either result is a valid choice,
         # or we have the max value which is: manual type-in
         if result < len(choices):
             return choices[result][0]
@@ -227,6 +230,7 @@ class TextAsker(Asker):
             return self.__get_from_user()
 
     def __show_choices(self, choices):
+        num = -1
         text = "Select one amongst those choices:\n"
         for num, choice in enumerate(choices):
             text += "[%d] Score: (%2d%%)\n%s\n" % (
@@ -368,15 +372,15 @@ def identify_movie(moviefile, osdb, asker):
         asker = AutomaticAsker()
 
     infos = osdb.check_hashes([moviefile.hash])
-    if not infos:
-        return
-
-    movies = [Movie(info['MovieName'],
-                    kind=info['MovieKind'],
-                    imdbid=info['MovieImdbID'],
-                    season=info['SeriesSeason'],
-                    episode=info['SeriesEpisode'])
-              for info in infos[moviefile.hash]]
+    if infos:
+        movies = [Movie(info['MovieName'],
+                        kind=info['MovieKind'],
+                        imdbid=info['MovieImdbID'],
+                        season=info['SeriesSeason'],
+                        episode=info['SeriesEpisode'])
+                  for info in infos[moviefile.hash]]
+    else:
+        movies = []
 
     movie_guess = moviefile.guess()
 
