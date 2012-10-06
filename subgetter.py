@@ -9,8 +9,9 @@ import re
 import struct
 import sys
 
-import opensubtitles
+import iso639
 import misc
+import opensubtitles
 import tvsubtitles
 
 class Movie(object):
@@ -397,6 +398,26 @@ def identify_movie(moviefile, osdb, asker):
         moviefile.update_info(movie)
 
 
+def select_language(code):
+    """
+    Get 2 letters and 3 letters code for language given as code
+
+    If one of the version doesn't exist, use the other version also
+
+    @param code: Language code we want to evaluate
+    @return: Tuple (two_letters_code, three_letters_code)
+    """
+    language = iso639.find_language(code)
+    if not language:
+        # Use default value
+        return ('en', 'eng')
+    else:
+        if not language['2L']:
+            language['2L'] = language['3L']
+        if not language['3L']:
+            language['3L'] = language['2L']
+        return (language['2L'], language['3L'])
+
 def main():
     parser = argparse.ArgumentParser(
         description="Get information about a movie")
@@ -418,10 +439,10 @@ def main():
     print "We identified this movie:"
     print moviefile
 
-    language = args.language
+    lang_2l, lang_3l = select_language(args.language)
 
     subs = osdb.download_subtitles([moviefile.osdb_criteria()],
-                                  language=language)
+                                  language=lang_3l)
     sub = None
     if moviefile.hash in subs:
         sub = subs[moviefile.hash]
@@ -429,7 +450,7 @@ def main():
         sub = tvsubtitles.download_subtitle(moviefile.name,
                                             moviefile.season,
                                             moviefile.episode,
-                                            language)
+                                            lang_2l)
 
     if not sub:
         print "No subtitle found for this movie"
