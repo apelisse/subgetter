@@ -13,6 +13,37 @@ Remove the generated code at the end of the file (big part), and run:
 put the output at the end at the file.
 """
 
+def find_language(code, code_type = None):
+    """
+    Find the language for code in the list.
+    If code_type is not set, look for this code in 2L and 3L.
+
+    @param code: ISO639 code to find
+    @param code_type: Code type if known (can be 2L, 3L, english or french)
+    @return: Dict with all codes and values for specified code,
+    None if not found
+    """
+    if not code_type:
+        if len(code) == 3:
+            code_type = '3L'
+        elif len(code) == 2:
+            code_type = '2L'
+        else:
+            return None
+
+    try:
+        # Let's see if it exists
+        CODES
+    except NameError:
+        print "Language codes are not generated. Please refer to README."
+
+    for codedict in CODES:
+        if codedict[code_type] == code:
+            return codedict
+
+    return None
+
+
 def main():
     """
     Read the file given by http://www.loc.gov/standards/iso639-2/
