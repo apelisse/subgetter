@@ -357,7 +357,7 @@ class MovieScore(object):
         return (movie_given, score)
 
 
-def identify_movie(moviefile, osdb, asker):
+def identify_movie(moviefile, osdb, asker = None):
     """
     Identify movie information for moviefile
 
