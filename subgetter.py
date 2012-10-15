@@ -249,6 +249,7 @@ class TextAsker(Asker):
                 season = 0
                 episode = 0
                 kind = Movie.MOVIE
+                break
             match = re.match("S(\d{1,2})E(\d{1,2})", show_info)
             if not match:
                 show_info = None
