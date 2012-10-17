@@ -106,6 +106,17 @@ http://trac.opensubtitles.org/projects/opensubtitles/wiki/HashSourceCodes
     def filename(self):
         return os.path.basename(self.path)
 
+    def subname(self):
+        return '.'.join(self.path.split('.')[:-1]) + '.srt'
+
+    def has_subtitle(self):
+        try:
+            os.stat(self.subname())
+        except OSError:
+            return False
+        else:
+            return True
+
     def osdb_criteria(self):
         return {
             'hash': self.hash,
@@ -441,12 +452,20 @@ def main():
 
     parser.add_argument('movie', help='Movie to investigate', nargs='+')
     parser.add_argument('-l', '--language', default='eng')
+    parser.add_argument('-f', '--force', action='store_true')
     args = parser.parse_args()
 
     osdb = opensubtitles.OpenSubtitles()
     asker = TextAsker(0.7)
 
-    moviefiles  = [MovieFile(movie) for movie in args.movie]
+    moviefiles = [MovieFile(movie) for movie in args.movie]
+
+    if not args.force:
+        for moviefile in list(moviefiles):
+            if moviefile.has_subtitle():
+                print moviefile.path, \
+                    'already has a subtitle (use -f to force)'
+                moviefiles.remove(moviefile)
 
     identify_movies({mfile.hash: mfile for mfile in moviefiles},
                    osdb, asker)
@@ -479,10 +498,7 @@ def main():
             print "No subtitle found for this movie"
             continue
 
-        # XXX: Dummy technic: what if the file already exists ..
-        subname = '.'.join(moviefile.path.split('.')[:-1]) + '.srt'
-
-        with open(subname, 'w') as f:
+        with open(moviefile.subname(), 'w') as f:
             f.write(sub)
 
 
