@@ -61,9 +61,6 @@ class MovieFile(Movie):
         self.size = os.path.getsize(path)
         self.extension = path.split('.')[-1]
 
-        # Any subfiles ?
-        self.subfile = None
-
     def __str__(self):
         return "Movie {0.path} ({0.hash} size {0.size}):\n{1}".format(
             self, super(MovieFile, self).__str__())
