@@ -162,7 +162,7 @@ class Asker(object):
         """
         self.ask_threshold = ask_threshold
 
-    def pick(self, choices):
+    def pick(self, moviefile, choices):
         """
         Pick a movie amongst choices
 
@@ -170,6 +170,7 @@ class Asker(object):
            - If one is higher than ask_threshold, pick the highest and notify
            - Else, call select() for all choices
 
+        @param moviefile: MovieFile we are trying to identify
         @param choices: List of tuples: [(Movie, Score), ...]
         @return: Selected movie
         """
@@ -181,15 +182,16 @@ class Asker(object):
         if max_choice and max_choice[1] > self.ask_threshold:
             return max_choice[0]
         else:
-            return self.select(choices)
+            return self.select(moviefile, choices)
 
-    def select(self, choices):
+    def select(self, moviefile, choices):
         """
         Allow user to select a movie
 
         This is an abstract base class, and this function should probably
         be implemented by inheriting classes.
 
+        @param moviefile: MovieFile we are trying to identify
         @param choices: List of (movies, score)
         @return: Selected movie
         """
@@ -202,10 +204,11 @@ class TextAsker(Asker):
     information manually from a terminal.
     Either select from a list of movies or type in the information.
     """
-    def select(self, choices):
+    def select(self, moviefile, choices):
         """
         Output choices, and read the input
         """
+        print 'Identifying movie:', moviefile.path
         print self.__show_choices(choices)
         result = None
         while result is None:
@@ -357,33 +360,14 @@ class MovieScore(object):
 
         return (movie_given, score)
 
-
-def identify_movie(moviefile, osdb, asker = None):
+def identify_one_movie(moviefile, movies, asker):
     """
-    Identify movie information for moviefile
+    Identify one movie
 
-    Most of the logic to identify the movie is obviously here.
-    It would be here to add an exhaustive description of how we
-    try to identify the movie
-
-    @param moviefile: Movie we want to identify
-    @param osdb: OSDb Handler
-    @param asker: Asker instance to get input from user
+    @param moviefile: Movie to identify
+    @param movies: Movies we found from osdb
+    @param asker: Asker instance to get opinion from user
     """
-    if not asker:
-        asker = AutomaticAsker()
-
-    infos = osdb.check_hashes([moviefile.hash])
-    if infos:
-        movies = [Movie(info['MovieName'],
-                        kind=info['MovieKind'],
-                        imdbid=info['MovieImdbID'],
-                        season=info['SeriesSeason'],
-                        episode=info['SeriesEpisode'])
-                  for info in infos[moviefile.hash]]
-    else:
-        movies = []
-
     movie_guess = moviefile.guess()
 
     # Give a note to each movies, against what we have
@@ -393,10 +377,42 @@ def identify_movie(moviefile, osdb, asker = None):
     scores.sort(key=operator.itemgetter(1))
 
     # Finally, let's decide amongst all movies
-    movie = asker.pick(scores)
+    movie = asker.pick(moviefile, scores)
 
     if movie:
         moviefile.update_info(movie)
+
+
+def identify_movies(moviefiles, osdb, asker = None):
+    """
+    Identify movie information from moviesfiles
+
+    Most of the logic to identify movies is obviously here.
+    It would be here to add an exhaustive description of how we
+    try to identify the movie
+
+    @param moviefiles: Movies we want to identify
+    @param osdb: OSDb Handler
+    @param asker: Asker instance to get input from user
+    """
+    if not asker:
+        asker = AutomaticAsker()
+
+    movies_info = osdb.check_hashes(moviefiles.keys())
+
+    for moviehash, moviefile in moviefiles.items():
+        try:
+            identify_one_movie(
+                moviefile,
+                [Movie(info['MovieName'],
+                       kind=info['MovieKind'],
+                       imdbid=info['MovieImdbID'],
+                       season=info['SeriesSeason'],
+                       episode=info['SeriesEpisode'])
+                 for info in movies_info[moviehash]],
+                asker)
+        except KeyError:
+            pass
 
 
 def select_language(code):
@@ -423,45 +439,51 @@ def main():
     parser = argparse.ArgumentParser(
         description="Get information about a movie")
 
-    parser.add_argument('movie', help='Movie to investigate')
+    parser.add_argument('movie', help='Movie to investigate', nargs='+')
     parser.add_argument('-l', '--language', default='eng')
     args = parser.parse_args()
 
     osdb = opensubtitles.OpenSubtitles()
-    moviefile  = MovieFile(args.movie)
     asker = TextAsker(0.7)
 
-    identify_movie(moviefile, osdb, asker)
+    moviefiles  = [MovieFile(movie) for movie in args.movie]
 
-    if not moviefile.name:
-        print "Unable to identify the movie"
-        sys.exit(1)
+    identify_movies({mfile.hash: mfile for mfile in moviefiles},
+                   osdb, asker)
 
-    print "We identified this movie:"
-    print moviefile
+    print
+    print 'Identification summary'
+    print
+    for moviefile in moviefiles:
+        if not moviefile.name:
+            print 'Unable to identify:'
+        print moviefile
 
     lang_2l, lang_3l = select_language(args.language)
 
-    subs = osdb.download_subtitles([moviefile.osdb_criteria()],
-                                  language=lang_3l)
-    sub = None
-    if moviefile.hash in subs:
-        sub = subs[moviefile.hash]
-    elif moviefile.kind == Movie.EPISODE:
-        sub = tvsubtitles.download_subtitle(moviefile.name,
-                                            moviefile.season,
-                                            moviefile.episode,
-                                            lang_2l)
+    subs = osdb.download_subtitles(
+        [moviefile.osdb_criteria() for moviefile in moviefiles],
+        language=lang_3l)
 
-    if not sub:
-        print "No subtitle found for this movie"
-        sys.exit(2)
+    for moviefile in moviefiles:
+        sub = None
+        if moviefile.hash in subs:
+            sub = subs[moviefile.hash]
+        elif moviefile.kind == Movie.EPISODE:
+            sub = tvsubtitles.download_subtitle(moviefile.name,
+                                                moviefile.season,
+                                                moviefile.episode,
+                                                lang_2l)
 
-    # XXX: Dummy technic: what if the file already exists ..
-    subname = '.'.join(moviefile.path.split('.')[:-1]) + '.srt'
+        if not sub:
+            print "No subtitle found for this movie"
+            continue
 
-    with open(subname, 'w') as f:
-        f.write(sub)
+        # XXX: Dummy technic: what if the file already exists ..
+        subname = '.'.join(moviefile.path.split('.')[:-1]) + '.srt'
+
+        with open(subname, 'w') as f:
+            f.write(sub)
 
 
 if __name__ == '__main__':
